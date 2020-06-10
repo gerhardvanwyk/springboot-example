@@ -1,19 +1,34 @@
 package org.wyk.application.spring;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.SneakyThrows;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.keycloak.KeycloakPrincipal;
 import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.adapters.springboot.KeycloakSpringBootConfigResolver;
+import org.keycloak.adapters.springsecurity.KeycloakConfiguration;
+import org.keycloak.adapters.springsecurity.authentication.KeycloakAuthenticationEntryPoint;
+import org.keycloak.adapters.springsecurity.authentication.KeycloakAuthenticationProvider;
 import org.keycloak.adapters.springsecurity.config.KeycloakWebSecurityConfigurerAdapter;
+import org.keycloak.adapters.springsecurity.filter.KeycloakAuthenticationProcessingFilter;
+import org.keycloak.adapters.springsecurity.filter.KeycloakSecurityContextRequestFilter;
 import org.keycloak.representations.AccessToken;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.core.authority.mapping.SimpleAuthorityMapper;
 import org.springframework.security.core.session.SessionRegistryImpl;
+import org.springframework.security.web.AuthenticationEntryPoint;
+import org.springframework.security.web.authentication.logout.LogoutFilter;
 import org.springframework.security.web.authentication.session.RegisterSessionAuthenticationStrategy;
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
+import org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter;
+import org.springframework.security.web.savedrequest.RequestCacheAwareFilter;
+import org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -24,8 +39,42 @@ import javax.servlet.http.HttpServletRequest;
  * When DEBUG is enabled it prints all the HTTP filters, request, responses etc. Not for Production
  */
 @EnableWebSecurity(debug = true)
-@Configuration
+@KeycloakConfiguration
 public class KeycloakWebSecurityConfiguration extends KeycloakWebSecurityConfigurerAdapter {
+
+    @Autowired
+    CloseableHttpClient httpClient;
+
+
+    /**
+     * This set the AuthenticationProvider to Keycloak - The AuthenticationProvider
+     * will do check the Keycloak token (OpenID) and authenticate the request.
+     * @param auth
+     * @throws Exception
+     */
+    @SneakyThrows
+    @Override
+    public void configure(AuthenticationManagerBuilder auth) {
+
+        KeycloakAuthenticationProvider keycloakAuthenticationProvider = keycloakAuthenticationProvider();
+        keycloakAuthenticationProvider.setGrantedAuthoritiesMapper(new SimpleAuthorityMapper());
+
+        //Ads the authentication provider for a Token (API REST endpoints)
+        auth.authenticationProvider(keycloakAuthenticationProvider);
+
+        //Adds the authentication provider for a Username & Password (web UI)
+        auth.authenticationProvider(new KeycloakUsernamePasswordAuthenticationProvider(mapper(), keycloakConfigResolver(), httpClient));
+
+    }
+
+    @Bean
+    protected KeycloakAuthenticationProcessingFilter keycloakAuthenticationProcessingFilter() throws Exception {
+        KeycloakAuthenticationProcessingFilter filter = new KeycloakAuthenticationProcessingFilter(authenticationManagerBean());
+        filter.setSessionAuthenticationStrategy(sessionAuthenticationStrategy());
+        filter.setFilterProcessesUrl("/api/**");
+        return filter;
+    }
+
 
     /**
      * 	&#064;Override
@@ -39,28 +88,78 @@ public class KeycloakWebSecurityConfiguration extends KeycloakWebSecurityConfigu
      * 																		// with an HTTP
      * 																		// post
      * 	}
+     * 	This set the permission for the resource the actual physical mapping to the file
+     * 	must still happen.
      * @param http
      * @throws Exception
      */
     @Override
 	 protected void configure(HttpSecurity http) throws Exception {
-	  		http
-                    .authorizeRequests()
+        http
+                //CSFR protection enabled
+                .csrf()
+                    .requireCsrfProtectionMatcher(keycloakCsrfRequestMatcher()).and()
 
-                    //permit all request to resources/**
-                    .antMatchers("resources/**").permitAll()
+                //Session management - Save the session locally
+                .sessionManagement()
+                    .sessionAuthenticationStrategy(sessionAuthenticationStrategy()).and()
 
-                    //permit all request to '/login' url
+                //Adds the ExceptionHandlingFilter before all others
+                .addFilterBefore(exceptionHandlingFilter(), WebAsyncManagerIntegrationFilter.class)
+
+                //?
+                .addFilterBefore(keycloakPreAuthActionsFilter(), LogoutFilter.class)
+                //?
+                .addFilterBefore(keycloakAuthenticationProcessingFilter(), RequestCacheAwareFilter.class)
+                //?
+                .addFilterAfter(keycloakSecurityContextRequestFilter(), SecurityContextHolderAwareRequestFilter.class)
+                //?
+                .addFilterAfter(keycloakAuthenticatedActionsRequestFilter(), KeycloakSecurityContextRequestFilter.class)
+
+                // Access denied handling
+                .exceptionHandling()
+                    .authenticationEntryPoint(authenticationEntryPoint()).and()
+
+                //Logout
+                .logout()
+                    .addLogoutHandler(keycloakLogoutHandler())
+                    .logoutUrl("/logout").permitAll()
+                    .logoutSuccessUrl("/login").and()
+
+                //Restrict access based on URL pattern
+                .authorizeRequests()
+
+                    //permit all request with the pattern '/*.groovy'
+                    .antMatchers("/*.groovy").permitAll()
+
+                    //permit all request with the pattern '/login*'
                     .antMatchers("/login*").permitAll()
 
-                    //for api request, token expected
+                    //permit all request with pattern '/error'
+                    .antMatchers("/error*").permitAll()
+
+                    //match api pattern , and require role 'authorized-user'
                     .antMatchers("/api/**").hasRole("authorized-user")
 
-                    //For all other urls we expect the role authenticated-user, if not redirect to the login form and we permit all request to reach to login screen.
-                    .anyRequest().authenticated().and().formLogin().loginPage("/login");
-	  		        //--------------------------------------
+                    //For other patterns we require already authenticated user - no Roles
+                    .anyRequest().authenticated().and()
 
-          	}
+
+
+                //Login page HTML form
+                .formLogin().loginPage("/login").successForwardUrl("/home").failureForwardUrl("/error");
+                //--------------------------------------
+
+    }
+
+    private ExceptionHandelingFilter exceptionHandlingFilter() {
+        return new ExceptionHandelingFilter();
+    }
+
+    @Bean
+    public ObjectMapper mapper(){
+        return new ObjectMapper();
+    }
 
     /**
      * Creates the Session Authentication Strategy (management of the session). The app only do the basics,
@@ -68,9 +167,24 @@ public class KeycloakWebSecurityConfiguration extends KeycloakWebSecurityConfigu
      * Addes Session Registry Implementation
      * @return
      */
-    @Override
+    @Bean
     protected SessionAuthenticationStrategy sessionAuthenticationStrategy() {
         return new RegisterSessionAuthenticationStrategy(new SessionRegistryImpl());
+    }
+
+    /**
+     * Entry point for Un Authenticated request, we set the default login url
+     * else it goes to keycloak's login page.
+     * This also mean we have to call the authentication endpoint manually after
+     * the user has submitted a username and password.
+     * @return
+     * @throws Exception
+     */
+    @Bean
+    protected AuthenticationEntryPoint authenticationEntryPoint() throws Exception {
+        KeycloakAuthenticationEntryPoint entryPoint =  new KeycloakAuthenticationEntryPoint(adapterDeploymentContext());
+        entryPoint.setLoginUri("/login");
+        return entryPoint;
     }
 
     /**

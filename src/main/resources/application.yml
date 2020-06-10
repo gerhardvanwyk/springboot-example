@@ -1,19 +1,16 @@
 
 keycloak:
-  realm: ExampleRealm
-  auth-server-url: http://127.0.0.1:8080/auth
-  ssl-required: none
+  enabled: true                                 #This enables keyclaok in your application
+  realm: example                                #Required name of the Security Realm configured in keycloak
+  auth-server-url: http://127.0.0.1:8080/auth   #Required Address for keycloak authentication endpoint
+  ssl-required: external                        #SSL Valid [all, external, none] for production use all
   resource: example-app-id
   public-client: true
-
-  security-constraints[0]:
-    auth-roles[0]: authenticated-user #user must have `authenticated-user` role to access the resource
-    security-collections[0]:
-      name: Rest API
-      patterns[0]: /stuff/*
-
-  expose-token: true
-  enabled: true
+  verify-token-audience: true
+  credentials: {                                   #Credentials for the client (The Application)
+    secret: 2209b3b5-5e75-42bd-b1e8-c8ad0f25291a
+  }
+  confidential-port: 0
 
 server:
   port: 8787

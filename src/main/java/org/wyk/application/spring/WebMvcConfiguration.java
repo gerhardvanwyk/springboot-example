@@ -1,10 +1,7 @@
 package org.wyk.application.spring;
 
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.EnableWebMvc;
-import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
-import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.servlet.config.annotation.*;
 
 /**
  * Here we override the defualt web mvc configuration as pulled by @EnableWebMvc
@@ -14,18 +11,18 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class WebMvcConfiguration implements WebMvcConfigurer {
 
-//    @Override
-//    public void addViewControllers(ViewControllerRegistry registry) {
-//        registry.addViewController("/").setViewName("index");
-//        registry.addViewController("/home").setViewName("index");
-//        registry.addViewController("/index").setViewName("index");
-//        registry.addViewController("/login").setViewName("login");
-//    }
-
     @Override
     public void configurePathMatch(PathMatchConfigurer configurer) {
         configurer
                 //If enabled a method mapped to "/users" also matches to "/users/"
                 .setUseTrailingSlashMatch(true);
+    }
+
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+
+        //A request with the pattern '/*.groovy' -> location for the physical resource can be found at the root of the classpath.
+        registry.addResourceHandler("/*.groovy").addResourceLocations("classpath:");
+
     }
 }

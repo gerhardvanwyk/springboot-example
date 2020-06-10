@@ -71,11 +71,13 @@ asyncJsonAppender.start()
 
 logger("org.wyk", Level.TRACE)
 
-logger("org.keycloak", DEBUG)
+logger("org.keycloak", TRACE)
 
 logger("org.springframework.boot", DEBUG)
 
-logger("org.springframework.security", DEBUG)
+logger("org.apache.catalina", DEBUG)
+
+logger("org.springframework.security", TRACE)
 
 logger("org.springframework.web", DEBUG)
 

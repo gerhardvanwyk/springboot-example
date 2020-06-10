@@ -14,7 +14,7 @@ import java.util.List;
 @RestController(value = "/api")
 public class DataRestController {
 
-    @GetMapping( value = "stuff", produces = {"application/json"})
+    @GetMapping( value = "/stuff", produces = {"application/json"})
     public List<Stuff> getStuff(){
         List<Stuff> stuffs = new ArrayList<>();
         Stuff one = new Stuff();
