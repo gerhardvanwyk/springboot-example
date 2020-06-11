@@ -1,4 +1,4 @@
-package org.wyk.application.spring;
+package org.wyk.application.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.core.JsonProcessingException;

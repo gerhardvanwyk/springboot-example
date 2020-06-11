@@ -1,9 +1,6 @@
-package org.wyk.application.spring;
+package org.wyk.application.filter;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
@@ -14,7 +11,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.keycloak.adapters.KeycloakDeployment;
 import org.keycloak.adapters.springboot.KeycloakSpringBootConfigResolver;
-import org.keycloak.util.BasicAuthHelper;
+import org.keycloak.representations.AccessTokenResponse;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -23,9 +20,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.wyk.application.dto.ErrorResponse;
+import org.wyk.application.exception.SessionNotAllowedException;
 
-import java.io.StringReader;
-import java.io.StringWriter;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
@@ -61,45 +58,72 @@ public class KeycloakUsernamePasswordAuthenticationProvider implements Authentic
         HttpPost post = new HttpPost(new URI(deployment.getTokenUrl()));
         post.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE);
         post.setHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
-        Map<String, String> header = new HashMap<>();
+
 
         //This is a bit of the hack we are getting the client secret from the deployment loaded
+        Map<String, String> header = new HashMap<>();
         deployment.getClientAuthenticator().setClientCredentials(deployment, header, header);
         post.addHeader("Authorization", header.get("Authorization"));
 
         //The request itself
         post.setEntity(new StringEntity(request));
 
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
+        SecurityContextHolder.setContext(context);
+
         CloseableHttpResponse response = template.execute(post);
+
         switch (response.getStatusLine().getStatusCode()){
             case HttpStatus.SC_UNAUTHORIZED : {
+
                 //User is not authorized
                 log.debug("Un-Authorized User " + token.getName());
+
+                //Creates a json object of the error
                 String body = IOUtils.toString(response.getEntity().getContent());
-                log.debug(body);
-                token.setAuthenticated(false);
-                break;
+                ErrorResponse errorResponse = mapper.readValue(body, ErrorResponse.class);
+                errorResponse.setHttpReason(response.getStatusLine().getReasonPhrase());
+                errorResponse.setHttpStatus(response.getStatusLine().getStatusCode());
+
+                throw new SessionNotAllowedException("The user is not authorized. " + errorResponse.getError_description(), errorResponse );
             }
-            case HttpStatus.SC_ACCEPTED: {
-                //Token returned
+            case HttpStatus.SC_OK: {
+                //User is authorized
+                log.debug("Authorized User " + token.getName());
+
+                //Creates a json object of the error
+                String body = IOUtils.toString(response.getEntity().getContent());
+
+                AccessTokenResponse accessTokenResponse = mapper.readValue(body, AccessTokenResponse.class);
+                log.debug(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(accessTokenResponse));
+
+//                RefreshableKeycloakSecurityContext skSession = new RefreshableKeycloakSecurityContext(deployment, null, tokenString, token, null, null, null);
+//                String principalName = AdapterUtils.getPrincipalName(deployment, token);
+//                final KeycloakPrincipal<RefreshableKeycloakSecurityContext> principal = new KeycloakPrincipal<RefreshableKeycloakSecurityContext>(principalName, skSession);
+//                final Set<String> roles = AdapterUtils.getRolesFromSecurityContext(skSession);
+
+                context.setAuthentication(token);
                 break;
             }
             case HttpStatus.SC_FORBIDDEN:{
                 //Applications is not allowed
                 log.debug("Application is not allowed " + deployment.getResourceName());
-                String body = IOUtils.toString(response.getEntity().getContent());
-                log.debug(body);
-                token.setAuthenticated(false);
                 break;
             }
             default:{
+
                 //some other error
+                log.error("Error occurred during the authentication process. Status: " + response.getStatusLine().getStatusCode() + " Reason: "  + response.getStatusLine().getReasonPhrase());
+
+                //Creates a json object of the error
+                String body = IOUtils.toString(response.getEntity().getContent());
+                ErrorResponse errorResponse = mapper.readValue(body, ErrorResponse.class);
+                errorResponse.setHttpReason(response.getStatusLine().getReasonPhrase());
+                errorResponse.setHttpStatus(response.getStatusLine().getStatusCode());
+
+                throw new SessionNotAllowedException("The user is not authorized. " + errorResponse.getError_description(), errorResponse );
             }
         }
-
-        SecurityContext context = SecurityContextHolder.createEmptyContext();
-        context.setAuthentication(token);
-        SecurityContextHolder.setContext(context);
 
 
 //        if(response.getStatusCode().is2xxSuccessful()){
@@ -130,25 +154,10 @@ public class KeycloakUsernamePasswordAuthenticationProvider implements Authentic
         return token;
     }
 
+
     @Override
     public boolean supports(Class<?> authentication) {
         return UsernamePasswordAuthenticationToken.class.isAssignableFrom(authentication);
     }
 
-    /**
-     {
-     "error": "invalid_grant",
-     "error_description": "Account is not fully set up"
-     }
-     */
-    @Getter
-    @Setter
-    public class ErrorResponse{
-
-        @JsonProperty
-        private String error;
-
-        @JsonProperty
-        private String error_description;
-    }
 }

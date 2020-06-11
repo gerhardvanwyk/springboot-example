@@ -5,7 +5,7 @@ keycloak:
   auth-server-url: http://127.0.0.1:8080/auth   #Required Address for keycloak authentication endpoint
   ssl-required: external                        #SSL Valid [all, external, none] for production use all
   resource: example-app-id
-  public-client: true
+  public-client: false                          #Is the client on a trusted network???
   verify-token-audience: true
   credentials: {                                   #Credentials for the client (The Application)
     secret: 2209b3b5-5e75-42bd-b1e8-c8ad0f25291a

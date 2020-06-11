@@ -1,8 +1,9 @@
-package org.wyk.application.spring;
+package org.wyk.application.filter;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.wyk.application.dto.ApiError;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
