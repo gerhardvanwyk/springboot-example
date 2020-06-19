@@ -23,7 +23,6 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.core.authority.mapping.SimpleAuthorityMapper;
 import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.web.AuthenticationEntryPoint;
-import org.springframework.security.web.authentication.logout.LogoutFilter;
 import org.springframework.security.web.authentication.session.RegisterSessionAuthenticationStrategy;
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 import org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter;
@@ -32,7 +31,7 @@ import org.springframework.security.web.servletapi.SecurityContextHolderAwareReq
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
-import org.wyk.application.filter.ExceptionHandelingFilter;
+import org.wyk.application.filter.ExceptionHandlingFilter;
 import org.wyk.application.filter.KeycloakUsernamePasswordAuthenticationProvider;
 
 import javax.servlet.http.HttpServletRequest;
@@ -107,14 +106,16 @@ public class KeycloakWebSecurityConfiguration extends KeycloakWebSecurityConfigu
                     .sessionAuthenticationStrategy(sessionAuthenticationStrategy()).and()
 
                 //Adds the ExceptionHandlingFilter before all others
+                // Catch IO and Servlet Exceptions -- These are not handled by the Controller exception handling
                 .addFilterBefore(exceptionHandlingFilter(), WebAsyncManagerIntegrationFilter.class)
 
-                //?
-                .addFilterBefore(keycloakPreAuthActionsFilter(), LogoutFilter.class)
-                //?
+                //Add a Authentications Step @see KeycloakUsernamePasswordAuthenticationProvider
                 .addFilterBefore(keycloakAuthenticationProcessingFilter(), RequestCacheAwareFilter.class)
-                //?
+
+                //Handles Bearer Request - Authenticate against Keycloak (RefreshableToken)
+                //RefreshableKeycloakSecurityContext
                 .addFilterAfter(keycloakSecurityContextRequestFilter(), SecurityContextHolderAwareRequestFilter.class)
+
                 //?
                 .addFilterAfter(keycloakAuthenticatedActionsRequestFilter(), KeycloakSecurityContextRequestFilter.class)
 
@@ -146,16 +147,14 @@ public class KeycloakWebSecurityConfiguration extends KeycloakWebSecurityConfigu
                     //For other patterns we require already authenticated user - no Roles
                     .anyRequest().authenticated().and()
 
-
-
                 //Login page HTML form
                 .formLogin().loginPage("/login").successForwardUrl("/home").failureForwardUrl("/error");
                 //--------------------------------------
 
     }
 
-    private ExceptionHandelingFilter exceptionHandlingFilter() {
-        return new ExceptionHandelingFilter();
+    private ExceptionHandlingFilter exceptionHandlingFilter() {
+        return new ExceptionHandlingFilter();
     }
 
     @Bean
@@ -198,6 +197,11 @@ public class KeycloakWebSecurityConfiguration extends KeycloakWebSecurityConfigu
     @Bean
     public KeycloakSpringBootConfigResolver keycloakConfigResolver() {
         return new KeycloakSpringBootConfigResolver();
+    }
+
+    @Bean
+    public KeycloakSecurityContextRequestFilter keycloakSecurityContextRequestFilter(){
+        return new KeycloakSecurityContextRequestFilter();
     }
 
     @Bean

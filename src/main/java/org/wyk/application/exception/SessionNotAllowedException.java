@@ -21,4 +21,8 @@ public class SessionNotAllowedException extends AuthenticationException {
         this.jsonError = jsonError;
     }
 
+    public SessionNotAllowedException(String msg){
+        super(msg);
+    }
+
 }

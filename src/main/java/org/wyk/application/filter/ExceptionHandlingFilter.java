@@ -15,14 +15,13 @@ import java.io.IOException;
 /**
  * This is a solution to the problem of errors not being handled when occurring in filters.
  */
-public class ExceptionHandelingFilter extends OncePerRequestFilter {
+public class ExceptionHandlingFilter extends OncePerRequestFilter {
 
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) {
         try {
             filterChain.doFilter(request, response);
-
         } catch (IOException  e) {
             setErrorResponse(HttpStatus.SERVICE_UNAVAILABLE, response, e);
             log.error("Could not establish connection", e);
