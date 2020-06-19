@@ -4,6 +4,8 @@ and have both a rest controller and view in my application. The reason is that t
 
 Please use with pessimism. 
 
+THIS IS A WORK IN PROGRESS
+
 ## HTTP Request
 The request url will first be matched againts a security configuration in org.wyk.application.spring.KeycloakWebSecurityConfiguration.configure
 if permission is allowed, either by being authenticated already or that the request match an anonomous or un authenticated pattern
