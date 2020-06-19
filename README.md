@@ -1,6 +1,6 @@
 # springboot-keycloak-example
-I have been looking for example that illustrate how to implement springboot, keycloak and thymeleaf. Were I could use my own login screen
-and have both a rest controller and view in my application. The reason is that the application is not very complex, but maybe it should be split. This may change in the future. In the example I tried to both learn and document the correct approach, but might be way of. 
+I have been looking for example that illustrate how to implement springboot, keycloak and thymeleaf. Where I could use my own login screen
+and have both a rest controller and view in my application. The reason is that the application is not very complex, but maybe it should be split. In the example I tried to both learn and document the correct approach, but might be way of. 
 
 Please use with pessimism. 
 
