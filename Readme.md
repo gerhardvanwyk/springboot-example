@@ -1,3 +1,6 @@
+# springboot-example
+Springboot with a RestController, UIController using thymeleaf and security using keycloak
+
 
 
 ## HTTP Request
@@ -199,3 +202,5 @@ HttpServletRequest.logout(). For other browser applications, you can redirect th
  which logs you out if you have an SSO session with your browser.
 
 7. Save session info --> browser
+
+
