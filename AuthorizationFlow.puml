@@ -1,0 +1,16 @@
+@startuml
+actor User
+User -> Application: 'Request URL /app
+Application --> User: Redirect Login Screen
+
+User -> Application: Wrong Username/Password
+Application --> Application: Error
+
+User -> Application: Login Correct
+
+Application -> KeyCloak: Authentication Request
+KeyCloak --> Application: Server Not Running Response
+
+Application -> KeyCloak: Another authentication Request
+Application <-- KeyCloak: another authentication Response
+@enduml

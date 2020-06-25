@@ -14,6 +14,11 @@ keycloak:
 
 server:
   port: 8787
+  error:
+    include-message: always
+    include-exception: true
+    include-stacktrace: always
+    include-binding-errors: always
 
 spring:
   application:

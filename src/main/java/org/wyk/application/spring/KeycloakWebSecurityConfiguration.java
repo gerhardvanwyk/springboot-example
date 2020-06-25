@@ -43,9 +43,11 @@ import javax.servlet.http.HttpServletRequest;
 @KeycloakConfiguration
 public class KeycloakWebSecurityConfiguration extends KeycloakWebSecurityConfigurerAdapter {
 
-    @Autowired
-    CloseableHttpClient httpClient;
+    private final CloseableHttpClient httpClient;
 
+    public KeycloakWebSecurityConfiguration(CloseableHttpClient httpClient) {
+        this.httpClient = httpClient;
+    }
 
     /**
      * This set the AuthenticationProvider to Keycloak - The AuthenticationProvider
@@ -139,7 +141,7 @@ public class KeycloakWebSecurityConfiguration extends KeycloakWebSecurityConfigu
                     .antMatchers("/login*").permitAll()
 
                     //permit all request with pattern '/error'
-                    .antMatchers("/error*").permitAll()
+                    .antMatchers("/error").permitAll()
 
                     //match api pattern , and require role 'authorized-user'
                     .antMatchers("/api/**").hasRole("authorized-user")
@@ -148,7 +150,10 @@ public class KeycloakWebSecurityConfiguration extends KeycloakWebSecurityConfigu
                     .anyRequest().authenticated().and()
 
                 //Login page HTML form
-                .formLogin().loginPage("/login").successForwardUrl("/home").failureForwardUrl("/error");
+                .formLogin()
+                    .loginPage("/login")
+                    .successForwardUrl("/home")
+                    .failureForwardUrl("/authError");
                 //--------------------------------------
 
     }

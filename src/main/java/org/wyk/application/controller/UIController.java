@@ -4,9 +4,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.representations.AccessToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.servlet.ModelAndView;
 
 @Slf4j
 @Controller
@@ -22,7 +25,7 @@ public class UIController {
      * 'produces' - MIME type
      * @return
      */
-    @GetMapping(value = {"/home"}, produces = {"text/html"})
+    @GetMapping(value = {"/home", "/"}, produces = {"text/html"})
     public String getHome(){
         return "index";
     }
@@ -33,14 +36,16 @@ public class UIController {
      * @return
      */
     @PostMapping(value = {"/home"}, produces = {"text/html"})
-    public String postHome(){
-        return "index";
+    public ModelAndView postHome(){
+        log.debug("POST Login in");
+        ModelAndView modelAndView = new ModelAndView("login");
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return modelAndView;
     }
 
     @GetMapping("/login")
-    public String login(){
-        log.debug("We are in control, please do not stress about your future");
-        return "login";
+    public String login() {
+        return "index";
     }
 
 }

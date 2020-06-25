@@ -1,7 +1,4 @@
-# springboot-example
-Springboot with a RestController, UIController using thymeleaf and security using keycloak
-
-
+# Springboot Example
 
 ## HTTP Request
 The request url will first be matched againts a security configuration in org.wyk.application.spring.KeycloakWebSecurityConfiguration.configure
@@ -9,7 +6,6 @@ if permission is allowed, either by being authenticated already or that the requ
 it will be allowed through.
 
 Next it will be check by if it matches any of the MVC path or resource handlers patterns. org.wyk.application.spring.WebMvcConfiguration
-
 
 ## Authentication Process
 
@@ -22,7 +18,6 @@ with the AuthenticationManager to handle (username + credential) authentication.
 The steps in the Authentication process is as follows:
 
 ## The Filter chain
-
 
 **1** ExceptionHandlingFilter 
 >Own Exception Handling. Catch IO and Servlet Exceptions
@@ -64,8 +59,7 @@ browser protection. Like X-Frame-Options, X-XSS-Protection and X-Content-Type-Op
 >also be changed by setting the usernameParameter and passwordParameter properties.
 >This filter by default responds to the URL /login.
 >> Here we pass in our own provider @see KeycloakUsernamePasswordAuthenticationProvider 
-    
-    
+        
 **8** KeycloakAuthenticationProcessingFilter
 >Match uri POST '/sso/login' by default, changed it to POST '/login'   
 >
@@ -108,11 +102,9 @@ browser protection. Like X-Frame-Options, X-XSS-Protection and X-Content-Type-Op
     
 **11** KeycloakSecurityContextRequestFilter
 >RefreshableKeycloakSecurityContext --> refresh the Keycloak context ??? 
-    
-    
+        
 **12** KeycloakAuthenticatedActionsFilter
-    
-    
+        
 **13** AnonymousAuthenticationFilter
 >Detects if there is no Authentication object in the SecurityContextHolder, and populates it with one if needed. 
 >Populate it with a AnonymousAuthenticationToken for Anonymous Access

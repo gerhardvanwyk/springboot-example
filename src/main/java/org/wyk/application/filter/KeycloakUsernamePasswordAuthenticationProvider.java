@@ -15,12 +15,14 @@ import org.keycloak.adapters.KeycloakDeployment;
 import org.keycloak.adapters.RefreshableKeycloakSecurityContext;
 import org.keycloak.adapters.springboot.KeycloakSpringBootConfigResolver;
 import org.keycloak.jose.jws.JWSInput;
+import org.keycloak.jose.jws.JWSInputException;
 import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.util.JsonSerialization;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.ProviderNotFoundException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
@@ -75,7 +77,7 @@ public class KeycloakUsernamePasswordAuthenticationProvider implements Authentic
         final String tokenUrl = deployment.getTokenUrl();
 
         if(tokenUrl == null)
-            throw new SessionNotAllowedException("OIDC server is not reachable at " + deployment.getAuthServerBaseUrl() );
+            throw new ProviderNotFoundException("OIDC server is not reachable at " + deployment.getAuthServerBaseUrl() );
 
         final HttpPost post = new HttpPost(new URI(tokenUrl));
         post.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE);
@@ -98,49 +100,12 @@ public class KeycloakUsernamePasswordAuthenticationProvider implements Authentic
         switch (response.getStatusLine().getStatusCode()){
 
             case HttpStatus.SC_UNAUTHORIZED : {
-
-                //User is not authorized
-                log.debug("Un-Authorized User " + token.getName());
-
-                //Creates a json object of the error
-                final ErrorResponse errorResponse = mapper.readValue(body, ErrorResponse.class);
-                errorResponse.setHttpReason(response.getStatusLine().getReasonPhrase());
-                errorResponse.setHttpStatus(response.getStatusLine().getStatusCode());
-
+                final ErrorResponse errorResponse = unAuthorized(token, response, body);
                 throw new SessionNotAllowedException("The user is not authorized. " + errorResponse.getError_description(), errorResponse );
             }
 
             case HttpStatus.SC_OK: {
-                //User is authorized
-                log.debug("Authorized User " + token.getName());
-
-                //Creates a json object of the error
-                final AccessTokenResponse clientToken = mapper.readValue(body, AccessTokenResponse.class);
-
-                final String accessTokenStr = clientToken.getToken();
-
-                try {
-                    //The access token is both the Access token and the IDToken
-                    final AccessToken accessToken = JsonSerialization.readValue(new JWSInput(accessTokenStr).getContent(), AccessToken.class);
-                    log.debug("Access Token: \n" + mapper.writerWithDefaultPrettyPrinter().writeValueAsString(accessToken));
-
-                    final RefreshableKeycloakSecurityContext keycloakSecurityContext =
-                            new RefreshableKeycloakSecurityContext(deployment, null, accessTokenStr, accessToken, clientToken.getIdToken(), accessToken, clientToken.getRefreshToken());
-
-                    final String principalName = AdapterUtils.getPrincipalName(deployment, accessToken);
-                    final KeycloakPrincipal<RefreshableKeycloakSecurityContext> principal = new KeycloakPrincipal<>(principalName, keycloakSecurityContext);
-
-
-                    token = new UsernamePasswordAuthenticationToken(principal, token.getCredentials(), token.getAuthorities());
-
-                } catch (IOException e) {
-                    throw new SessionNotAllowedException("Session could not be stored", e);
-                }
-
-                log.debug("Access Token Response: \n" + mapper.writerWithDefaultPrettyPrinter().writeValueAsString(clientToken));
-
-                context.setAuthentication(token);
-
+                token = getUsernamePasswordAuthenticationToken(token, deployment, context, body);
                 break;
             }
 
@@ -151,20 +116,67 @@ public class KeycloakUsernamePasswordAuthenticationProvider implements Authentic
             }
 
             default:{
-
-                //some other error
-                log.error("Error occurred during the authentication process. Status: " + response.getStatusLine().getStatusCode() + " Reason: "  + response.getStatusLine().getReasonPhrase());
-
-                //Creates a json object of the error
-                final ErrorResponse errorResponse = mapper.readValue(body, ErrorResponse.class);
-                errorResponse.setHttpReason(response.getStatusLine().getReasonPhrase());
-                errorResponse.setHttpStatus(response.getStatusLine().getStatusCode());
-
+                final ErrorResponse errorResponse = defaultResponse(response, body);
                 throw new SessionNotAllowedException("The user is not authorized. " + errorResponse.getError_description(), errorResponse );
             }
         }
 
         return token;
+    }
+
+    private ErrorResponse unAuthorized(UsernamePasswordAuthenticationToken token, CloseableHttpResponse response, String body) throws com.fasterxml.jackson.core.JsonProcessingException {
+        //User is not authorized
+        log.debug("Un-Authorized User " + token.getName());
+
+        //Creates a json object of the error
+        final ErrorResponse errorResponse = mapper.readValue(body, ErrorResponse.class);
+        errorResponse.setHttpReason(response.getStatusLine().getReasonPhrase());
+        errorResponse.setHttpStatus(response.getStatusLine().getStatusCode());
+        return errorResponse;
+    }
+
+    private UsernamePasswordAuthenticationToken getUsernamePasswordAuthenticationToken(UsernamePasswordAuthenticationToken token, KeycloakDeployment deployment, SecurityContext context, String body) throws com.fasterxml.jackson.core.JsonProcessingException, JWSInputException {
+        //User is authorized
+        log.debug("Authorized User " + token.getName());
+
+        //Creates a json object of the error
+        final AccessTokenResponse clientToken = mapper.readValue(body, AccessTokenResponse.class);
+
+        final String accessTokenStr = clientToken.getToken();
+
+        try {
+            //The access token is both the Access token and the IDToken
+            final AccessToken accessToken = JsonSerialization.readValue(new JWSInput(accessTokenStr).getContent(), AccessToken.class);
+            log.debug("Access Token: \n" + mapper.writerWithDefaultPrettyPrinter().writeValueAsString(accessToken));
+
+            final RefreshableKeycloakSecurityContext keycloakSecurityContext =
+                    new RefreshableKeycloakSecurityContext(deployment, null, accessTokenStr, accessToken, clientToken.getIdToken(), accessToken, clientToken.getRefreshToken());
+
+            final String principalName = AdapterUtils.getPrincipalName(deployment, accessToken);
+            final KeycloakPrincipal<RefreshableKeycloakSecurityContext> principal = new KeycloakPrincipal<>(principalName, keycloakSecurityContext);
+
+
+            token = new UsernamePasswordAuthenticationToken(principal, token.getCredentials(), token.getAuthorities());
+
+        } catch (IOException e) {
+            throw new SessionNotAllowedException("Session could not be stored", e);
+        }
+
+        log.debug("Access Token Response: \n" + mapper.writerWithDefaultPrettyPrinter().writeValueAsString(clientToken));
+
+        context.setAuthentication(token);
+        return token;
+    }
+
+    private ErrorResponse defaultResponse(CloseableHttpResponse response, String body) throws com.fasterxml.jackson.core.JsonProcessingException {
+        //some other error
+        log.error("Error occurred during the authentication process. Status: " + response.getStatusLine().getStatusCode() + " Reason: "  + response.getStatusLine().getReasonPhrase());
+
+        //Creates a json object of the error
+        final ErrorResponse errorResponse = mapper.readValue(body, ErrorResponse.class);
+        errorResponse.setHttpReason(response.getStatusLine().getReasonPhrase());
+        errorResponse.setHttpStatus(response.getStatusLine().getStatusCode());
+        return errorResponse;
     }
 
 

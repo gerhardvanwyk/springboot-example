@@ -8,17 +8,107 @@
     <title>Error</title>
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
     <link href="https://getbootstrap.com/docs/4.0/examples/signin/signin.css" rel="stylesheet" crossorigin="anonymous"/>
+
+    <script type="text/javascript">
+
+        function getUrlVars() {
+            var vars = {};
+            window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m,key,value) {
+                vars[key] = value;
+            });
+            return vars;
+        }
+
+        function getUrlParam(parameter, defaultvalue){
+            var urlparameter = defaultvalue;
+            if(window.location.href.indexOf(parameter) > -1){
+                urlparameter = getUrlVars()[parameter];
+            }
+            return urlparameter;
+        }
+
+        window.onload = function () {
+            document.getElementById('timestamp').innerHTML = getUrlParam('timestamp', '');
+            document.getElementById('status').innerHTML = getUrlParam('status', '200');
+            document.getElementById('error').innerHTML = getUrlParam('error', 'error occurred');
+
+            document.getElementById('message').innerHTML = getUrlParam('message', '');
+            document.getElementById('path').innerHTML = getUrlParam('path', '');
+            document.getElementById('trace').innerHTML = getUrlParam('trace', '');
+            document.getElementById('errors').innerHTML = getUrlParam('errors', '');
+            document.getElementById('exception').innerHTML = getUrlParam('exception', '');
+        }
+
+    </script>
+
 </head>
+
 <body>
     <form class="form-signin" method="get" action="/login">
-        <h2>
+        <h4>
             <span>An Application Error occurred. You have been logged out of the system</span>
-        </h2>
-        <h3>
-            <label id="errorMessage" th:name="error" th:value="${error}"/>
-        </h3>
+        </h4>
+        <h6>
+            <!-- TODO The timestamp, status and error parameters are always returned the others are configurable -->
+            <div class="wrapper">
+                <div class="first">Timestamp: </div>
+                <div class="param" id="timestamp"></div>
+            </div>
+            <div class="wrapper">
+                <div class="first">Status: </div>
+                <div class="param" id="status"></div>
+            </div>
+            <div class="wrapper">
+                <div class="first">Error: </div>
+                <div class="param" id="error"></div>
+            </div>
+
+            <!-- TODO hide when not avaialbe -->
+            <div class="wrapper">
+                <div class="first">Message: </div>
+                <div class="param" id="message"></div>
+            </div>
+            <div class="wrapper">
+                <div class="first">Trace: </div>
+                <div class="param" id="trace"></div>
+            </div>
+            <div class="wrapper">
+                <div class="first">Exception: </div>
+                <div class="param" id="exception"></div>
+            </div>
+            <div class="wrapper">
+                <div class="first">Path: </div>
+                <div class="param" id="path"></div>
+            </div>
+            <div class="wrapper">
+                <div class="first">Binding Errors: </div>
+                <div class="param" id="errors"></div>
+            </div>
+
+        </h6>
         <span><p></p></span>
         <button class="btn btn-lg btn-primary btn-block" type="submit">Login</button>
     </form>
 </body>
+
+<style>
+
+     .wrapper{
+        width: 500px;
+        border: 0px solid black;
+        overflow: hidden; /* add this to contain floated children */
+    }
+
+    .first {
+        width: 100px;
+        float:left; /* add this */
+        border: 0px solid red;
+    }
+
+    .param {
+        border: 0px solid green;
+        float: left; /* add this */
+    }
+
+</style>
 </html>
