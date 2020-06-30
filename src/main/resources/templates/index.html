@@ -1,17 +1,48 @@
 <!DOCTYPE html>
-<html lang="en">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="https://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <title>Example Application</title>
     <script src="https://cdn.jsdelivr.net/npm/js-cookie@rc/dist/js.cookie.min.js"></script>
-    <script type="text/javascript">
-        import Cookies from 'js-cookie'
 
-        document.getElementById('user').innerHTML = Cookies.get;
+    <script type="text/javascript">
+
+        window.onload = function () {
+
+
+            //Cookie expire in 1 day
+            Cookies.set('vt', 'true', {expires: 1});
+
+        }
     </script>
 </head>
 <body>
     <h1>Welcome Home</h1>
-    <div id="user"></div>
+    <div class="wrapper">
+        <div class="first">User: </div>
+        <div class="param" id="user">${identity.name}</div>
+    </div>
 </body>
+
+<style>
+
+    .wrapper{
+        width: 500px;
+        border: 0px solid black;
+        overflow: hidden; /* add this to contain floated children */
+    }
+
+    .first {
+        width: 100px;
+        float:left; /* add this */
+        border: 0px solid red;
+    }
+
+    .param {
+        border: 0px solid green;
+        float: left; /* add this */
+    }
+
+</style>
+
 </html>

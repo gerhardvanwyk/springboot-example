@@ -13,6 +13,7 @@ import javax.servlet.http.HttpServletRequest;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
+    //TODO use the APIError object
     @ExceptionHandler(Exception.class)
     public ModelAndView handleError(HttpServletRequest req, Exception ex) {
         log.error("Request: " + req.getRequestURL() + " raised ", ex);

@@ -13,7 +13,8 @@ import org.keycloak.adapters.springsecurity.config.KeycloakWebSecurityConfigurer
 import org.keycloak.adapters.springsecurity.filter.KeycloakAuthenticationProcessingFilter;
 import org.keycloak.adapters.springsecurity.filter.KeycloakSecurityContextRequestFilter;
 import org.keycloak.representations.AccessToken;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.web.ErrorProperties;
+import org.springframework.boot.autoconfigure.web.ServerProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
@@ -31,6 +32,7 @@ import org.springframework.security.web.servletapi.SecurityContextHolderAwareReq
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import org.wyk.application.ErrorHandler;
 import org.wyk.application.filter.ExceptionHandlingFilter;
 import org.wyk.application.filter.KeycloakUsernamePasswordAuthenticationProvider;
 
@@ -45,8 +47,11 @@ public class KeycloakWebSecurityConfiguration extends KeycloakWebSecurityConfigu
 
     private final CloseableHttpClient httpClient;
 
-    public KeycloakWebSecurityConfiguration(CloseableHttpClient httpClient) {
+    private final ServerProperties serverProperties;
+
+    public KeycloakWebSecurityConfiguration(CloseableHttpClient httpClient, ServerProperties serverProperties) {
         this.httpClient = httpClient;
+        this.serverProperties = serverProperties;
     }
 
     /**
@@ -159,7 +164,7 @@ public class KeycloakWebSecurityConfiguration extends KeycloakWebSecurityConfigu
     }
 
     private ExceptionHandlingFilter exceptionHandlingFilter() {
-        return new ExceptionHandlingFilter();
+        return new ExceptionHandlingFilter(new ErrorHandler(serverProperties));
     }
 
     @Bean

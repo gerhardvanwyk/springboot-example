@@ -29,14 +29,14 @@
 
         window.onload = function () {
             document.getElementById('timestamp').innerHTML = getUrlParam('timestamp', '');
-            document.getElementById('status').innerHTML = getUrlParam('status', '200');
-            document.getElementById('error').innerHTML = getUrlParam('error', 'error occurred');
-
+            document.getElementById('status').innerHTML = getUrlParam('status', '');
             document.getElementById('message').innerHTML = getUrlParam('message', '');
-            document.getElementById('path').innerHTML = getUrlParam('path', '');
-            document.getElementById('trace').innerHTML = getUrlParam('trace', '');
-            document.getElementById('errors').innerHTML = getUrlParam('errors', '');
-            document.getElementById('exception').innerHTML = getUrlParam('exception', '');
+
+           // document.getElementById('error').innerHTML = getUrlParam('error', 'error occurred');
+            // document.getElementById('path').innerHTML = getUrlParam('path', '');
+            // document.getElementById('trace').innerHTML = getUrlParam('trace', '');
+            // document.getElementById('errors').innerHTML = getUrlParam('errors', '');
+            // document.getElementById('exception').innerHTML = getUrlParam('exception', '');
         }
 
     </script>
@@ -59,31 +59,32 @@
                 <div class="param" id="status"></div>
             </div>
             <div class="wrapper">
-                <div class="first">Error: </div>
-                <div class="param" id="error"></div>
-            </div>
-
-            <!-- TODO hide when not avaialbe -->
-            <div class="wrapper">
                 <div class="first">Message: </div>
                 <div class="param" id="message"></div>
             </div>
-            <div class="wrapper">
-                <div class="first">Trace: </div>
-                <div class="param" id="trace"></div>
-            </div>
-            <div class="wrapper">
-                <div class="first">Exception: </div>
-                <div class="param" id="exception"></div>
-            </div>
-            <div class="wrapper">
-                <div class="first">Path: </div>
-                <div class="param" id="path"></div>
-            </div>
-            <div class="wrapper">
-                <div class="first">Binding Errors: </div>
-                <div class="param" id="errors"></div>
-            </div>
+<!--            <div class="wrapper">-->
+<!--                <div class="first">Error: </div>-->
+<!--                <div class="param" id="error"></div>-->
+<!--            </div>-->
+
+            <!-- TODO hide when not avaialbe -->
+
+<!--            <div class="wrapper">-->
+<!--                <div class="first">Trace: </div>-->
+<!--                <div class="param" id="trace"></div>-->
+<!--            </div>-->
+<!--            <div class="wrapper">-->
+<!--                <div class="first">Exception: </div>-->
+<!--                <div class="param" id="exception"></div>-->
+<!--            </div>-->
+<!--            <div class="wrapper">-->
+<!--                <div class="first">Path: </div>-->
+<!--                <div class="param" id="path"></div>-->
+<!--            </div>-->
+<!--            <div class="wrapper">-->
+<!--                <div class="first">Binding Errors: </div>-->
+<!--                <div class="param" id="errors"></div>-->
+<!--            </div>-->
 
         </h6>
         <span><p></p></span>

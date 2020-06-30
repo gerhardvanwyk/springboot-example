@@ -10,6 +10,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.ModelAndView;
+import org.wyk.application.dto.Identity;
 
 @Slf4j
 @Controller
@@ -38,14 +39,18 @@ public class UIController {
     @PostMapping(value = {"/home"}, produces = {"text/html"})
     public ModelAndView postHome(){
         log.debug("POST Login in");
-        ModelAndView modelAndView = new ModelAndView("login");
+        ModelAndView modelAndView = new ModelAndView("index");
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+        Identity identity = new Identity(auth);
+        modelAndView.addObject("identity", identity);
+
         return modelAndView;
     }
 
     @GetMapping("/login")
     public String login() {
-        return "index";
+        return "login";
     }
 
 }

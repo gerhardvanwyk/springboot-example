@@ -74,6 +74,8 @@ public class KeycloakUsernamePasswordAuthenticationProvider implements Authentic
         final String request = "client_id=" + deployment.getResourceName() + "&username=" + token.getName() + "&password=" +
                 token.getCredentials() + "&grant_type=password";
 
+        log.debug("Request: " + request);
+
         final String tokenUrl = deployment.getTokenUrl();
 
         if(tokenUrl == null)
@@ -96,6 +98,7 @@ public class KeycloakUsernamePasswordAuthenticationProvider implements Authentic
 
         final CloseableHttpResponse response = template.execute(post);
         final String body = IOUtils.toString(response.getEntity().getContent());
+        log.debug("Response: " + body);
 
         switch (response.getStatusLine().getStatusCode()){
 
